@@ -1,0 +1,186 @@
+// Kirana Sahayak — Prisma schema
+// Table/column names are mapped to snake_case (@@map / @map) so the Python
+// ML pipeline (ml/) can query these tables directly with plain SQL without
+// fighting Prisma's default camelCase naming.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Store {
+  id           String   @id @default(cuid())
+  storeCode    String   @unique @map("store_code")
+  passwordHash String   @map("password_hash")
+  storeName    String   @map("store_name")
+  location     String?
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  products       Product[]
+  sales          Sale[]
+  inventoryTx    InventoryTransaction[]
+  forecasts      Forecast[]
+  weatherData    WeatherData[]
+  forecastConfig StoreForecastConfig?
+
+  @@map("stores")
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  storeId        String   @map("store_id")
+  store          Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  name           String
+  normalizedName String   @map("normalized_name")
+  category       String
+  brand          String?
+  packSize       String?  @map("pack_size")
+  unit           String?
+  sellingPrice   Decimal  @map("selling_price")
+  costPrice      Decimal  @map("cost_price")
+  currentStock   Int      @default(0) @map("current_stock")
+  reorderLevel   Int      @default(0) @map("reorder_level")
+  supplierMOQ    Int?     @map("supplier_moq")
+  leadTimeDays   Int?     @map("lead_time_days")
+  supplier       String?
+  imageUrl       String?  @map("image_url")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  aliases     ProductAlias[]
+  saleItems   SaleItem[]
+  inventoryTx InventoryTransaction[]
+  forecasts   Forecast[]
+
+  @@unique([storeId, normalizedName])
+  @@index([storeId, category])
+  @@map("products")
+}
+
+model ProductAlias {
+  id              String  @id @default(cuid())
+  productId       String  @map("product_id")
+  product         Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  alias           String
+  normalizedAlias String  @map("normalized_alias")
+  language        String?
+
+  @@index([normalizedAlias])
+  @@map("product_aliases")
+}
+
+model Sale {
+  id              String   @id @default(cuid())
+  storeId         String   @map("store_id")
+  store           Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  transactionDate DateTime @default(now()) @map("transaction_date")
+  totalItems      Int      @map("total_items")
+  totalValue      Decimal  @map("total_value")
+  source          String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  items SaleItem[]
+
+  @@index([storeId, transactionDate])
+  @@map("sales")
+}
+
+model SaleItem {
+  id           String  @id @default(cuid())
+  saleId       String  @map("sale_id")
+  sale         Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId    String  @map("product_id")
+  product      Product @relation(fields: [productId], references: [id])
+  quantity     Int
+  sellingPrice Decimal @map("selling_price")
+  costPrice    Decimal @map("cost_price")
+  subtotal     Decimal
+
+  @@index([productId])
+  @@map("sale_items")
+}
+
+model InventoryTransaction {
+  id          String   @id @default(cuid())
+  storeId     String   @map("store_id")
+  store       Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productId   String   @map("product_id")
+  product     Product  @relation(fields: [productId], references: [id])
+  type        String // "SALE" | "RESTOCK" | "ADJUSTMENT"
+  quantity    Int // negative for sale, positive for restock
+  referenceId String?  @map("reference_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([storeId, productId, createdAt])
+  @@map("inventory_transactions")
+}
+
+model Forecast {
+  id                   String   @id @default(cuid())
+  storeId              String   @map("store_id")
+  store                Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  productId            String   @map("product_id")
+  product              Product  @relation(fields: [productId], references: [id])
+  forecastDate         DateTime @map("forecast_date") // week start date
+  predictedDemand      Float    @map("predicted_demand")
+  safetyStock          Float    @map("safety_stock")
+  currentStockSnapshot Int      @map("current_stock_snapshot")
+  recommendedOrder     Int      @map("recommended_order")
+  expectedRevenue      Decimal? @map("expected_revenue")
+  expectedCost         Decimal? @map("expected_cost")
+  expectedGrossProfit  Decimal? @map("expected_gross_profit")
+  confidence           Float?
+  explanation          String
+  modelVersion         String   @map("model_version")
+  createdAt            DateTime @default(now()) @map("created_at")
+
+  @@unique([storeId, productId, forecastDate, modelVersion])
+  @@index([storeId, forecastDate])
+  @@map("forecasts")
+}
+
+model WeatherData {
+  id               String   @id @default(cuid())
+  storeId          String?  @map("store_id") // null = general/fallback data
+  store            Store?   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  date             DateTime
+  temperature      Float?
+  rainfallMm       Float?   @map("rainfall_mm")
+  weatherCondition String?  @map("weather_condition")
+  source           String // "api" | "fallback"
+
+  @@index([storeId, date])
+  @@map("weather_data")
+}
+
+model Festival {
+  id     String   @id @default(cuid())
+  date   DateTime
+  name   String
+  region String?
+
+  @@index([date])
+  @@map("festivals")
+}
+
+model StoreForecastConfig {
+  id               String    @id @default(cuid())
+  storeId          String    @unique @map("store_id")
+  store            Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  modelVersion     String    @map("model_version")
+  parameters       Json
+  dataMaturity     String    @map("data_maturity") // "cold_start" | "warming" | "mature"
+  lastTrainedAt    DateTime? @map("last_trained_at")
+  trainingDataFrom DateTime? @map("training_data_from")
+  trainingDataTo   DateTime? @map("training_data_to")
+  evaluationMAE    Float?    @map("evaluation_mae")
+  evaluationRMSE   Float?    @map("evaluation_rmse")
+  evaluationMAPE   Float?    @map("evaluation_mape")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  @@map("store_forecast_configs")
+}

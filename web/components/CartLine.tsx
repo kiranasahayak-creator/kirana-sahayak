@@ -1,3 +1,4 @@
+import { Minus, Plus, X } from "lucide-react";
 import { CartLine as CartLineType } from "@/lib/types";
 
 export function CartLine({
@@ -12,39 +13,41 @@ export function CartLine({
   const subtotal = line.product.sellingPrice * line.quantity;
 
   return (
-    <div className="flex items-center justify-between border-b border-gray-100 py-3 last:border-0">
+    <div className="flex items-center gap-3 border-b border-paper-100 py-4 last:border-0">
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-gray-900">{line.product.name}</p>
-        <p className="text-xs text-gray-500">₹{line.product.sellingPrice} each</p>
+        <p className="truncate font-display font-semibold text-paper-900">{line.product.name}</p>
+        <p className="text-sm text-paper-600">₹{line.product.sellingPrice} each</p>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 rounded-full bg-paper-50 p-1">
         <button
           onClick={() => (line.quantity <= 1 ? onRemove() : onChangeQuantity(line.quantity - 1))}
           aria-label="Decrease quantity"
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-paper-800 transition hover:bg-white hover:shadow-card"
         >
-          -
+          <Minus size={16} />
         </button>
-        <span className="w-6 text-center text-sm font-medium">{line.quantity}</span>
+        <span className="w-7 text-center font-display font-semibold text-paper-900">
+          {line.quantity}
+        </span>
         <button
           onClick={() => onChangeQuantity(line.quantity + 1)}
           aria-label="Increase quantity"
-          className="flex h-7 w-7 items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100"
+          className="flex h-9 w-9 items-center justify-center rounded-full text-paper-800 transition hover:bg-white hover:shadow-card"
         >
-          +
+          <Plus size={16} />
         </button>
       </div>
 
-      <p className="ml-4 w-16 shrink-0 text-right text-sm font-semibold text-gray-900">
+      <p className="w-16 shrink-0 text-right font-display font-semibold text-paper-900">
         ₹{subtotal}
       </p>
       <button
         onClick={onRemove}
         aria-label="Remove item"
-        className="ml-2 text-gray-400 hover:text-red-500"
+        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-paper-400 transition hover:bg-red-50 hover:text-red-500"
       >
-        ✕
+        <X size={16} />
       </button>
     </div>
   );

@@ -1,5 +1,6 @@
 "use client";
 
+import { Mic } from "lucide-react";
 import { useRef, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import { VoiceTranscribeResponse } from "@/lib/types";
@@ -123,29 +124,22 @@ export function VoiceButton({
         onClick={phase === "recording" ? stopRecording : startRecording}
         disabled={phase === "processing"}
         aria-label={phase === "recording" ? "Stop recording" : "Start voice input"}
-        className={`flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition disabled:opacity-60 ${
-          phase === "recording" ? "animate-pulse bg-red-500" : "bg-brand-500 hover:bg-brand-600"
+        className={`flex h-14 w-14 items-center justify-center rounded-full text-white shadow-elevated transition disabled:opacity-60 ${
+          phase === "recording" ? "animate-pulse bg-red-500" : "bg-accent-500 hover:bg-accent-600"
         }`}
       >
-        {phase === "processing" ? (
-          <span className="text-xs">...</span>
-        ) : (
-          <MicIcon />
-        )}
+        {phase === "processing" ? <span className="text-xs">...</span> : <Mic size={22} />}
       </button>
-      {phase === "recording" && <span className="text-xs text-gray-500">Listening... tap to stop</span>}
-      {errorMessage && <span className="max-w-[12rem] text-right text-xs text-red-500">{errorMessage}</span>}
+      {phase === "recording" && (
+        <span className="rounded-full bg-white px-2.5 py-1 text-xs text-paper-600 shadow-card">
+          Listening... tap to stop
+        </span>
+      )}
+      {errorMessage && (
+        <span className="max-w-[12rem] rounded-lg bg-white px-2.5 py-1 text-right text-xs text-red-500 shadow-card">
+          {errorMessage}
+        </span>
+      )}
     </div>
-  );
-}
-
-function MicIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-      <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-      <line x1="12" y1="19" x2="12" y2="23" />
-      <line x1="8" y1="23" x2="16" y2="23" />
-    </svg>
   );
 }
